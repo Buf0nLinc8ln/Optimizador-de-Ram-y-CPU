@@ -20,7 +20,7 @@ static void aplicar_filtros(GtkButton *button, gpointer user_data) {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
     gtk_text_buffer_set_text(buffer, "", -1);
 
-    // Obtener texto y limpiarlo
+   
     char *pid_text    = g_strdup(gtk_editable_get_text(GTK_EDITABLE(entry_pid)));
     char *uid_text    = g_strdup(gtk_editable_get_text(GTK_EDITABLE(entry_uid)));
     char *gid_text    = g_strdup(gtk_editable_get_text(GTK_EDITABLE(entry_gid)));
