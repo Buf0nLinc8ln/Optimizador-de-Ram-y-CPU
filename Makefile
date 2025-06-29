@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
-LIBS = -lm
+LIBS = -lm -lprocps $(shell pkg-config --cflags --libs gtk4)
 
-SRCS = main.c #direccion de los .c
+SRCS = main.c src/Filtros.c src/interfaz.c
 OBJS = $(SRCS:.c=.o)
-EXEC = proyecto
+EXEC = programa
 
 all: $(EXEC)
 
@@ -12,7 +12,7 @@ $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $< $(shell pkg-config --cflags gtk4)
 
 clean:
 	rm -f $(EXEC) $(OBJS)

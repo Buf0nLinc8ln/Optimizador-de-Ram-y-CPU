@@ -3,6 +3,25 @@
 
 #include <gtk/gtk.h>
 
+
+// estructura que contiene los filtros ha aplicar a los procesos
+typedef struct {
+    int pid, uid, gid, ppid, gpid;
+    char *user;
+    char *group;
+    char *nombre;
+    char estado;
+    int limite_ram;
+    int limite_cpu;
+} Filtros;
+
+// estructura para almacenar variables globales
+typedef struct {
+    Filtros filtros;
+    Node *lista;
+    char *modo;
+} Global;
+
 extern GtkWidget *entry_pid;
 extern GtkWidget *entry_uid;
 extern GtkWidget *entry_gid;
@@ -18,7 +37,7 @@ extern GtkWidget *entry_cpu_limit;
 extern GtkWidget *button_suspend;
 extern GtkWidget *button_eliminate;
 
-
+int es_entero(char *cadena)
 void aplicar_filtros(GtkButton *button, gpointer user_data);
 void activar_modo(GtkButton *button, gpointer user_data);
 void suspender(GtkButton *button, gpointer user_data);

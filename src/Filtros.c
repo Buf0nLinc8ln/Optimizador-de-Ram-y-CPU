@@ -111,6 +111,7 @@ Node *filtrar_por_uid(Node **parametroHead, int uid, char *user, int primer_filt
         proc_t *proceso;
         Node *retornoHead = NULL; // se guarda la cabeza de la lista enlazada, ya que es el primer filtro que se aplica
         Node *nodoAnterior = NULL; // puntero para el nodo anterior
+        int procesos_encontrados = 0; // contador de procesos encontrados
         while ((proceso = readproc(proc, NULL)) != NULL)  {
             if ((uid == -1 && strcmp(proceso->ruser, user) == 0) || (user == NULL && proceso->ruid == uid)) { // si la funcion recibe -1 como aparametro para uid, se filtran los procesos con el nombre de usuario.
                 // ruser contiene el nombre de usuario real que ejecuta el proceso. Se usa strcmp para comparar cadenas de caracteres
@@ -123,10 +124,14 @@ Node *filtrar_por_uid(Node **parametroHead, int uid, char *user, int primer_filt
                     nodoAnterior->next = nuevoNodo; // se enlaza el nodo anterior con el nuevo nodo
                     nodoAnterior = nuevoNodo; // se actualiza el nodo anterior con el nuevo nodo
                 }
+                procesos_encontrados++; // se incrementa en 1 el contador de procesos encontrados
             }
             freeproc(proceso);
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL; // se retorna NULL si no se encontraron procesos
+        }
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por UID o nombre de usuario
     }
 
@@ -163,7 +168,8 @@ Node *filtrar_por_gid(Node **parametroHead, int gid, char *group, int primer_fil
 
         proc_t *proceso;
         Node *retornoHead = NULL; 
-        Node *nodoAnterior = NULL; 
+        Node *nodoAnterior = NULL;
+        int procesos_encontrados = 0; 
         while ((proceso = readproc(proc, NULL)) != NULL)  {
 
             if ((gid == -1 && strcmp(proceso->rgroup, group) == 0) || (group == NULL && proceso->ruid == gid)) { // si la funcion recibe -1 como aparametro para gid, se filtran los procesos con el nombre de grupo.
@@ -176,10 +182,14 @@ Node *filtrar_por_gid(Node **parametroHead, int gid, char *group, int primer_fil
                     nodoAnterior->next = nuevoNodo; 
                     nodoAnterior = nuevoNodo; 
                 }
+                procesos_encontrados++; 
             }
             freeproc(proceso);
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL;
+        }
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por GID o nombre de grupo
     }
 
@@ -208,7 +218,7 @@ Node *filtrar_por_gid(Node **parametroHead, int gid, char *group, int primer_fil
 }
 
 
-Node *filtrar_por_nombre(Node **parametroHead, const char *nombre, int primer_filtro) {
+Node *filtrar_por_nombre(Node **parametroHead, char *nombre, int primer_filtro) {
     // la funcion recibe como parametro el nombre del proceso y la orden de generar o no la lista enlazada con los procesos filtrados por nombre
 
     if (primer_filtro == 1) {
@@ -217,7 +227,8 @@ Node *filtrar_por_nombre(Node **parametroHead, const char *nombre, int primer_fi
 
         proc_t *proceso;
         Node *retornoHead = NULL; 
-        Node *nodoAnterior = NULL; 
+        Node *nodoAnterior = NULL;
+        int procesos_encontrados = 0;
         while ((proceso = readproc(proc, NULL)) != NULL) {
             if (strcmp(proceso->cmd, nombre) == 0) { // cmd contiene el nombre del proceso
                 Node *nuevoNodo = crearNodo(proceso);
@@ -228,10 +239,14 @@ Node *filtrar_por_nombre(Node **parametroHead, const char *nombre, int primer_fi
                     nodoAnterior->next = nuevoNodo; 
                     nodoAnterior = nuevoNodo; // se actualiza el nodo anterior con el nuevo nodo
                 }
+                procesos_encontrados++; 
             }
             freeproc(proceso); 
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL; 
+        }
         return retornoHead; 
     }
     
@@ -266,7 +281,8 @@ Node *filtrar_por_ppid(Node **parametroHead, int ppid, int primer_filtro) {
         PROCTAB *proc = openproc(PROC_FILLSTAT | PROC_FILLSTATUS | PROC_FILLUSR | PROC_FILLGRP); 
         proc_t *proceso;
         Node *retornoHead = NULL; 
-        Node *nodoAnterior = NULL; 
+        Node *nodoAnterior = NULL;
+        int procesos_encontrados = 0; 
         while ((proceso = readproc(proc, NULL)) != NULL)  {
             if (proceso->ppid == ppid) { // ppid contiene el PPID del proceso
                 Node *nuevoNodo = crearNodo(proceso);
@@ -276,11 +292,15 @@ Node *filtrar_por_ppid(Node **parametroHead, int ppid, int primer_filtro) {
                 } else {
                     nodoAnterior->next = nuevoNodo; 
                     nodoAnterior = nuevoNodo; 
-                } 
+                }
+                procesos_encontrados++; 
             }
             freeproc(proceso);
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL; 
+        }
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por PPID
     }
 
@@ -313,7 +333,8 @@ Node *filtrar_por_gpid(Node **parametroHead, int gpid, int primer_filtro) {
         PROCTAB *proc = openproc(PROC_FILLSTAT | PROC_FILLSTATUS | PROC_FILLUSR | PROC_FILLGRP); 
         proc_t *proceso;
         Node *retornoHead = NULL; 
-        Node *nodoAnterior = NULL; 
+        Node *nodoAnterior = NULL;
+        int procesos_encontrados = 0;
         while ((proceso = readproc(proc, NULL)) != NULL)  {
             if (proceso->pgrp == gpid) { // pgrp contiene el GPID del proceso
                 Node *nuevoNodo = crearNodo(proceso);
@@ -324,10 +345,14 @@ Node *filtrar_por_gpid(Node **parametroHead, int gpid, int primer_filtro) {
                     nodoAnterior->next = nuevoNodo; 
                     nodoAnterior = nuevoNodo; 
                 }
+                procesos_encontrados++;
             }
             freeproc(proceso);
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL; 
+        }
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por GPID
     }
 
@@ -359,7 +384,8 @@ Node *filtrar_por_estado(Node **parametroHead, char estado, int primer_filtro) {
         PROCTAB *proc = openproc(PROC_FILLSTAT | PROC_FILLSTATUS | PROC_FILLUSR | PROC_FILLGRP); 
         proc_t *proceso;
         Node *retornoHead = NULL; 
-        Node *nodoAnterior = NULL; 
+        Node *nodoAnterior = NULL;
+        int procesos_encontrados = 0; 
         while ((proceso = readproc(proc, NULL)) != NULL)  {
             if (proceso->state == estado || (proceso->tty != 0 && ((estado == 'F' && proceso->pgrp == proceso->tpgid) || (estado == 'B' && proceso->pgrp != proceso->tpgid))) ) { // state contiene el estado del proceso, y se filtran los procesos que estan en estado de foreground(primer plano) o background(segundo plano)
                 // si el estado es 'F', se filtran los procesos que estan en primer plano
@@ -374,10 +400,14 @@ Node *filtrar_por_estado(Node **parametroHead, char estado, int primer_filtro) {
                     nodoAnterior->next = nuevoNodo; 
                     nodoAnterior = nuevoNodo; 
                 }
+                procesos_encontrados++; 
             }
             freeproc(proceso);
         }
         closeproc(proc);
+        if (procesos_encontrados == 0) {
+            return NULL; 
+        }
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por estado
     }
 
