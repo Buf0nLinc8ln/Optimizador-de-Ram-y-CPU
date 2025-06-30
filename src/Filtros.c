@@ -73,7 +73,7 @@ void freeLista(struct Node *head) {
     }
 }
 
-int filtrar_por_pid(int pid) {
+Node *filtrar_por_pid(int pid) {
 
     // la funcion recibe como parametro el pid del proceso
     // PROC_FILLSTAT: lee stat, que contiene el estado del proceso y en este caso la segunda columna es el nombre del proceso
@@ -81,20 +81,20 @@ int filtrar_por_pid(int pid) {
     PROCTAB *proc = openproc(PROC_FILLSTAT); 
 
     proc_t *proceso; // puntero de tipo proc_t, estructura que contiene la informacion de un proceso
+    int proceso_encontrado = 0;
+    Node *nuevoNodo = NULL;
     while ((proceso = readproc(proc, NULL)) != NULL) {
-
         if (proceso->tid == pid) { // tid contiene el pid del proceso
-
-            Node *nuevoNodo = crearNodo(proceso); // crea un nuevo nodo con el proceso actual (en este caso va ser el unico nodo de la lista)
-
+            nuevoNodo = crearNodo(proceso); // crea un nuevo nodo con el proceso actual (en este caso va ser el unico nodo de la lista)
+            proceso_encontrado++;
         }
-
         freeproc(proceso); // libera la memoria del proceso actual
     }
-
     closeproc(proc); // cierra el acceso a /proc
-
-    return 1; // se retorna 1 si se uso esta funcion para filtrar por pid
+    if (proceso_encontrado == 0) {
+        return NULL;
+    }
+    return nuevoNodo; // se retorna 1 si se uso esta funcion para filtrar por pid
 }
 
 
@@ -135,7 +135,7 @@ Node *filtrar_por_uid(Node **parametroHead, int uid, char *user, int primer_filt
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por UID o nombre de usuario
     }
 
-    if (primer_filtro == 0) { // si primer_filtro es 0, significa que se quiere eliminar procesos de la lista enlazada
+    if (primer_filtro == 0 && *parametroHead != NULL) { // si primer_filtro es 0, significa que se quiere eliminar procesos de la lista enlazada
         
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
@@ -172,7 +172,7 @@ Node *filtrar_por_gid(Node **parametroHead, int gid, char *group, int primer_fil
         int procesos_encontrados = 0; 
         while ((proceso = readproc(proc, NULL)) != NULL)  {
 
-            if ((gid == -1 && strcmp(proceso->rgroup, group) == 0) || (group == NULL && proceso->ruid == gid)) { // si la funcion recibe -1 como aparametro para gid, se filtran los procesos con el nombre de grupo.
+            if ((gid == -1 && strcmp(proceso->rgroup, group) == 0) || (group == NULL && proceso->rgid == gid)) { // si la funcion recibe -1 como aparametro para gid, se filtran los procesos con el nombre de grupo.
                 // rgroup contiene el nombre de grupo real que ejecuta el proceso. 
                 Node *nuevoNodo = crearNodo(proceso);
                 if (nodoAnterior == NULL) {
@@ -193,12 +193,12 @@ Node *filtrar_por_gid(Node **parametroHead, int gid, char *group, int primer_fil
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por GID o nombre de grupo
     }
 
-    if (primer_filtro == 0) { // si primer_filtro es 0, significa que se quiere eliminar procesos de la lista enlazada
+    if (primer_filtro == 0 && *parametroHead != NULL) { // si primer_filtro es 0, significa que se quiere eliminar procesos de la lista enlazada
         
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
         while (nodeActual != NULL) {
-            if ((gid == -1 && strcmp(nodeActual->data->ruser, group) == 0) || (group == NULL && nodeActual->data->ruid == gid)) {
+            if ((gid == -1 && strcmp(nodeActual->data->rgroup, group) == 0) || (group == NULL && nodeActual->data->ruid == gid)) {
                 if (nodeAnterior == NULL) {
                     
                     *parametroHead = nodeActual->next; 
@@ -250,7 +250,7 @@ Node *filtrar_por_nombre(Node **parametroHead, char *nombre, int primer_filtro) 
         return retornoHead; 
     }
     
-    if (primer_filtro == 0) { // si primer_filtro es 0, significa que se quiere eliminar un proceso de la lista enlazada
+    if (primer_filtro == 0 && *parametroHead != NULL) { // si primer_filtro es 0, significa que se quiere eliminar un proceso de la lista enlazada
         
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
@@ -304,7 +304,7 @@ Node *filtrar_por_ppid(Node **parametroHead, int ppid, int primer_filtro) {
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por PPID
     }
 
-    if (primer_filtro == 0) { 
+    if (primer_filtro == 0 && *parametroHead != NULL) { 
         
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
@@ -356,7 +356,7 @@ Node *filtrar_por_gpid(Node **parametroHead, int gpid, int primer_filtro) {
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por GPID
     }
 
-    if (primer_filtro == 0) { 
+    if (primer_filtro == 0 && *parametroHead != NULL) { 
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
         while (nodeActual != NULL) {
@@ -411,7 +411,7 @@ Node *filtrar_por_estado(Node **parametroHead, char estado, int primer_filtro) {
         return retornoHead; // se retorna la cabeza de la lista enlazada con los procesos filtrados por estado
     }
 
-    if (primer_filtro == 0) { 
+    if (primer_filtro == 0 && *parametroHead != NULL) { 
         struct Node *nodeActual = *parametroHead;
         struct Node *nodeAnterior = NULL;
         while (nodeActual != NULL) {

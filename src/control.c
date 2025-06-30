@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <time.h>
 #include "../proc/readproc.h"
 #include "../include/Filtros.h"
 #include "../include/control.h"
@@ -10,26 +11,37 @@
 
 
 float calcular_porcentaje_cpu(pid_t pid) {
-    long clock_ticks = sysconf(_SC_CLK_TCK); // para obtener el numero de ticks por segundo
-    proc_t proceso1, proceso2;
+    long clock_ticks = sysconf(_SC_CLK_TCK); // para obtener el número de ticks por segundo
+    proc_t *proceso;
+    proc_t p1 = {0}, p2 = {0}; // se usa sin ser punteros para evitar asiganar memoria y liberarla
     double uptime1, uptime2;
     FILE *uptime_file;
+    PROCTAB *tab;
 
     // se obtienen los primeros datos
-    get_proc_stats(pid, &proceso1); // get_proc_stats obtiene los datos tipo proc_t del proceso con el pid dado
     uptime_file = fopen("/proc/uptime", "r"); // se abre en modo lectura 
     if (uptime_file == NULL) {
         return -1; // si no se puede abrir el archivo, se retorna -1
     }
-    fscanf(uptime_file, "%lf", &uptime1); // fscanf lee el primero valor de uptime de tipo double
+    fscanf(uptime_file, "%lf", &uptime1); // fscanf lee el primer valor de uptime de tipo double
     fclose(uptime_file);
+    tab = openproc(PROC_FILLSTAT); 
+    proceso = readproc(tab, NULL);
+    while (proceso != NULL) {
+        if (proceso->tid == pid) { 
+            memcpy(&p1, proceso, sizeof(proc_t)); // se copia todo el contenido
+            break;
+        }
+        freeproc(proceso);
+        proceso = readproc(tab, NULL);
+    }
+    closeproc(tab);
 
-    double usage1_seconds = (proceso1.utime + proceso1.stime) / clock_ticks; // se calcula el uso de cpu en segundos
+    double usage1_seconds = (p1.utime + p1.stime) / clock_ticks; // se calcula el uso de cpu en segundos
 
     sleep(1); // se espera un segundo para obtener otros datos en este intervalo
 
     // se obtienen los segundos datos
-    get_proc_stats(pid, &proceso2);
     uptime_file = fopen("/proc/uptime", "r");
     if (uptime_file == NULL) {
         return -1; 
@@ -37,7 +49,19 @@ float calcular_porcentaje_cpu(pid_t pid) {
     fscanf(uptime_file, "%lf", &uptime2);
     fclose(uptime_file);
 
-    double usage2_seconds = (proceso2.utime + proceso2.stime) / clock_ticks;
+    tab = openproc(PROC_FILLSTAT);
+    proceso = readproc(tab, NULL);
+    while (proceso != NULL) {
+        if (proceso->tid == pid) {
+            memcpy(&p2, proceso, sizeof(proc_t));
+            break;
+        }
+        freeproc(proceso);
+        proceso = readproc(tab, NULL);
+    }
+    closeproc(tab);
+
+    double usage2_seconds = (p2.utime + p2.stime) / clock_ticks;
 
     double diferencia_usage = usage2_seconds - usage1_seconds;
     double diferencia_uptime = uptime2 - uptime1;
@@ -99,7 +123,7 @@ Node *filtrar_por_cpu(Node **parametroHead, float limite_cpu, int primer_filtro)
     }
 }
 
-Node *filtrar_por_ram(Node **parametroHead, long limite_ram, int primer_filtro) {
+Node *filtrar_por_ram(Node **parametroHead, unsigned long limite_ram, int primer_filtro) {
     if (primer_filtro == 1) {
         PROCTAB *proc = openproc(PROC_FILLMEM | PROC_FILLSTAT | PROC_FILLSTATUS);
         proc_t *proceso;
@@ -150,32 +174,41 @@ Node *filtrar_por_ram(Node **parametroHead, long limite_ram, int primer_filtro) 
 }
 
 
-int eliminar_procesos(Node *head) {
-    while (head != NULL) {
-        if (kill(head->data->tid, SIGKILL) == 0) {
-            printf(" El proceso %s eliminado exitosamente. \n", head->data->cmdline);
+void eliminar_procesos(Node **head) {
+    Node *nodeActual = *head;
+    while (nodeActual != NULL) {
+        if (kill(nodeActual->data->tid, SIGKILL) == 0) {
+            printf(" El proceso '%s' eliminado exitosamente. \n", nodeActual->data->cmd);
         } else {
-            printf("❌ Error al terminar el proceso %s. \n", head->data->cmdline);
+            printf("❌ Error al terminar el proceso '%s'. \n", nodeActual->data->cmd);
         }
-    } 
+        nodeActual = nodeActual->next;
+    }
+    printf("\n");
 }
 
-int suspender_procesos(Node *head) {
-    while (head != NULL) {
-        if (kill(head->data->tid, SIGSTOP) == 0) {
-            printf(" El proceso %s suspendido exitosamente. \n", head->data->cmdline);
+int suspender_procesos(Node **head) {
+    Node *nodeActual = *head;
+    while (nodeActual != NULL) {
+        if (kill(nodeActual->data->tid, SIGSTOP) == 0) {
+            printf(" El proceso '%s' suspendido exitosamente. \n", nodeActual->data->cmd);
+
         } else {
-            printf("❌ Error al suspender el proceso %s. \n", head->data->cmdline);
+            printf("❌ Error al suspender el proceso '%s'. \n", nodeActual->data->cmd);
         }
-    } 
+        nodeActual = nodeActual->next;
+    }
+    return 1;
 }
 
-int reanudar_procesos(Node *head) {
-    while (head != NULL) {
-        if (kill(head->data->tid, SIGCONT) == 0) {
-            printf(" El proceso %s reanudado exitosamente. \n", head->data->cmdline);
+int reanudar_procesos(Node **head) {
+    Node *nodeActual = *head;
+    while (nodeActual != NULL) {
+        if (kill(nodeActual->data->tid, SIGCONT) == 0) {
+            printf(" El proceso '%s' reanudado exitosamente. \n", nodeActual->data->cmd);
         } else {
-            printf("❌ Error al reanudar el proceso %s. \n", head->data->cmdline);
+            printf("❌ Error al reanudar el proceso '%s'. \n", nodeActual->data->cmd);
         }
+        nodeActual = nodeActual->next;
     } 
 }

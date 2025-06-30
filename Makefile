@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -g
 LIBS = -lm -lprocps $(shell pkg-config --cflags --libs gtk4)
 
-SRCS = main.c src/Filtros.c src/interfaz.c
+SRCS = main.c src/Filtros.c src/interfaz.c src/control.c
 OBJS = $(SRCS:.c=.o)
 EXEC = programa
 
