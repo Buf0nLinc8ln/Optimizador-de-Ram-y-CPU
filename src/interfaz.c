@@ -11,13 +11,16 @@ GtkWidget *estado_buttons[5];
 gint estado_seleccionado = 0;
 GtkWidget *entry_ram_limit;
 GtkWidget *entry_cpu_limit;
+GtkWidget *boton_reiniciar;
 GtkWidget *button_suspend;
 GtkWidget *button_eliminate;
+GtkWidget *boton_reanudar;
+
 # define INDICE_FILTROS 9
 GtkWidget *asterisco[INDICE_FILTROS] = {NULL};
 
 int es_entero(char *cadena) {
-    for (int i = 0; i < strlen(cadena); i++) {
+    for (size_t i = 0; i < strlen(cadena); i++) {
         if (isdigit(cadena[i]) == 0) { // isdigt retorna 0 si el caracter no es un dígito
             return 0; 
         }
@@ -38,6 +41,11 @@ void aplicar_filtros(GtkButton *button, gpointer user_data) {
     char *gpid_text = g_strstrip(g_strdup(gtk_editable_get_text(GTK_EDITABLE(entry_gpid))));
     char *estado = g_strstrip(g_strdup(gtk_editable_get_text(GTK_EDITABLE(entry_estado))));
 
+
+    // if (global->lista != NULL) {
+    //     gtk_widget_set_visible(boton_reiniciar, TRUE);
+    // }
+    
     // si en algun campo se ingresa "cualquier", se asigna un valor de 0 para int y 'none' para char
     if ((strcmp(pid_text, "cualquier") == 0)) {
         global->filtros.pid = 0; 
@@ -271,6 +279,7 @@ void activar_modo(GtkButton *button, gpointer user_data) {
     gtk_widget_set_visible(entry_cpu_limit, g_strcmp0(global->modo, "CPU") == 0);
     gtk_widget_set_visible(button_suspend, TRUE);
     gtk_widget_set_visible(button_eliminate, TRUE);
+    // gtk_widget_set_visible(boton_reiniciar, TRUE);
 
     // para el campo ram
     if (g_strcmp0(global->modo, "RAM") == 0) {
@@ -330,19 +339,27 @@ void activar_modo(GtkButton *button, gpointer user_data) {
 
 void suspender(GtkButton *button, gpointer user_data) {
     Global *global = (Global *)user_data;
-    suspender_procesos(&global->lista);
+    if (global->lista != NULL) {
+        suspender_procesos(&global->lista);
+        gtk_widget_set_visible(boton_reanudar, TRUE);
+        global->suspendido = 1;
+    }
 }
 
 
 void eliminar(GtkButton *button, gpointer user_data) {
     Global *global = (Global *)user_data;
-    eliminar_procesos(&global->lista);
+    if (global->lista != NULL) {
+        eliminar_procesos(&global->lista);
+    }
 }
 
-// void reanudar(GtkButton *button, gpointer user_data) {
-//     Global *global = (Global *)user_data;
-//     reanudar_procesos(&global->lista);
-// }
+void reanudar(GtkButton *button, gpointer user_data) {
+    Global *global = (Global *)user_data;
+    if (global->lista != NULL) {
+        reanudar_procesos(&global->lista);
+    }
+}
 
 void reiniciar_filtros(GtkButton *button, gpointer user_data) {
     Global *global = (Global *)user_data;
@@ -356,6 +373,7 @@ void reiniciar_filtros(GtkButton *button, gpointer user_data) {
     global->primer_filtro = 0;
     global->filtrado_por_pid = 0;
     global->modo = NULL;
+    global->suspendido = 0;
 
     // limpiar la estructura filtros, evitar errores
     memset(&(global->filtros), 0, sizeof(global->filtros));
@@ -376,92 +394,39 @@ void reiniciar_filtros(GtkButton *button, gpointer user_data) {
     gtk_widget_set_visible(entry_cpu_limit, FALSE);
     gtk_widget_set_visible(button_suspend, FALSE);
     gtk_widget_set_visible(button_eliminate, FALSE);
+    gtk_widget_set_visible(boton_reanudar, FALSE);
 
-    // quitar asterisco si lo hubiera
-    gtk_label_set_text(GTK_LABEL(asterisco[0]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[1]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[2]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[3]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[4]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[5]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[6]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[7]), "");
-    gtk_label_set_text(GTK_LABEL(asterisco[8]), "");
+    limpiar_asteriscos();
+
 }
 
-// static void on_reanudar_response(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-//     GtkAlertDialog *alert = GTK_ALERT_DIALOG(source_object);
-//     int response = gtk_alert_dialog_choose_finish(alert, res, NULL);
+// quitar asterisco si lo hubiera
+void limpiar_asteriscos() {
+    for (int i = 0; i < INDICE_FILTROS; i++) {
+        if (asterisco[i]) {
+            gtk_label_set_text(GTK_LABEL(asterisco[i]), "");
+        }
+    }
+}
 
 
-//     if (response == 0) {
-//     g_print("Reanudar procesos\n");
-//     } else {
-//     g_print("Los procesos no se reanudarán\n");
-//     }
-// }
-// static void reanudar(GtkWindow *parent_window) {
-//     const char *buttons[] = {"Sí", "No", NULL};
-//     GtkAlertDialog *alert = gtk_alert_dialog_new("¿Reanudar procesos?");
-//     gtk_alert_dialog_set_buttons(alert, buttons);
+static gboolean confirmar_salida(GtkWindow *window, gpointer user_data) {
+    Global *global = (Global *)user_data;
 
-//     gtk_alert_dialog_choose(alert, parent_window, NULL, on_reanudar_response, NULL);
-// }
+    if (global->lista != NULL) {
+        freeLista(global->lista);
+        global->lista = NULL;
+    }
 
-// void reanudar(GtkWindow *window, Node **lista) {
-//     reanudar_procesos(lista);
-// }
+    g_free(global);
+    gtk_window_destroy(window);
+    return TRUE;  
+}
 
-
-// static void on_confirmar_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data) {
-//     GtkWindow *window = GTK_WINDOW(user_data);
-//     Global *global = g_object_get_data(G_OBJECT(dialog), "global");
-
-//     if (response_id == GTK_RESPONSE_YES) {
-//         reanudar(window, &global->lista);
-//     }
-
-//     if (global->lista != NULL) {
-//         freeLista(global->lista);
-//         global->lista = NULL;
-//     }
-
-//     g_free(global);
-//     gtk_window_destroy(window);
-//     gtk_window_destroy(GTK_WINDOW(dialog)); // cierra el diálogo
-// }
-
-// static gboolean confirmar_salida(GtkWindow *window, gpointer user_data) {
-//     Global *global = (Global *)user_data;
-
-//     if (global->suspendido == 1) {
-//         GtkWidget *dialog = gtk_message_dialog_new(
-//             window,
-//             GTK_DIALOG_MODAL,
-//             GTK_MESSAGE_QUESTION,
-//             GTK_BUTTONS_YES_NO,
-//             "¿Reanudar procesos?"
-//         );
-
-//         g_object_set_data(G_OBJECT(dialog), "global", global);
-//         g_signal_connect(dialog, "response", G_CALLBACK(on_confirmar_dialog_response), window);
-//         gtk_window_present(GTK_WINDOW(dialog));
-//         return TRUE;
-//     }
-
-//     if (global->lista != NULL) {
-//         freeLista(global->lista);
-//         global->lista = NULL;
-//     }
-
-//     g_free(global);
-//     gtk_window_destroy(window);
-//     return TRUE;
-// }
 
 void activate(GtkApplication *app, gpointer user_data) {
 
-    Global *global = g_new(Global, 1);
+    Global *global = g_new0(Global, 1);
 
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Optimizador de Ram y CPU");
@@ -507,9 +472,10 @@ void activate(GtkApplication *app, gpointer user_data) {
     gtk_grid_attach(GTK_GRID(grid), boton, 0, row, 1, 1);
     g_signal_connect(boton, "clicked", G_CALLBACK(aplicar_filtros), global);
 
-    GtkWidget *boton_reiniciar = gtk_button_new_with_label("Reiniciar Filtros");
+    boton_reiniciar = gtk_button_new_with_label("Reiniciar Filtros");
     gtk_grid_attach(GTK_GRID(grid), boton_reiniciar, 1, row++, 1, 1);
     g_signal_connect(boton_reiniciar, "clicked", G_CALLBACK(reiniciar_filtros), global);
+    gtk_widget_set_visible(boton_reiniciar, TRUE);
 
     GtkWidget *separator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_grid_attach(GTK_GRID(grid), separator, 0, row++, 2, 1);
@@ -541,7 +507,7 @@ void activate(GtkApplication *app, gpointer user_data) {
     gtk_editable_set_text(GTK_EDITABLE(entry_cpu_limit), "cualquier");
 
     button_suspend = gtk_button_new_with_label("Suspender");
-    gtk_grid_attach(GTK_GRID(grid), button_suspend, 0, row, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), button_suspend, 0, row, 1, 1); 
     g_signal_connect(button_suspend, "clicked", G_CALLBACK(suspender), global);
     gtk_widget_set_visible(button_suspend, FALSE);
 
@@ -550,8 +516,13 @@ void activate(GtkApplication *app, gpointer user_data) {
     g_signal_connect(button_eliminate, "clicked", G_CALLBACK(eliminar), global);
     gtk_widget_set_visible(button_eliminate, FALSE);
 
+    boton_reanudar = gtk_button_new_with_label("Reanudar");
+    gtk_grid_attach(GTK_GRID(grid), boton_reanudar, 0, row++, 2, 1);
+    g_signal_connect(boton_reanudar, "clicked", G_CALLBACK(reanudar), global);
+    gtk_widget_set_visible(boton_reanudar, FALSE); 
+
    
-    // g_signal_connect(window, "close-request", G_CALLBACK(confirmar_salida), global);
+    g_signal_connect(window, "close-request", G_CALLBACK(confirmar_salida), global);
     gtk_window_present(GTK_WINDOW(window));
 }
 

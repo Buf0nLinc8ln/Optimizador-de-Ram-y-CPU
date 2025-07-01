@@ -54,7 +54,7 @@ void aplicar_filtros(GtkButton *button, gpointer user_data);
 void activar_modo(GtkButton *button, gpointer user_data);
 void suspender(GtkButton *button, gpointer user_data);
 void eliminar(GtkButton *button, gpointer user_data);
-void reanudar(GtkWindow *window, Node **lista);
+void reanudar(GtkButton *button, gpointer user_data);
 void activate(GtkApplication *app, gpointer user_data);
 
 #endif 

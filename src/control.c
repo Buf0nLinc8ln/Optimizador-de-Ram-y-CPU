@@ -10,7 +10,7 @@
 
 
 
-float calcular_porcentaje_cpu(pid_t pid) {
+float calcular_porcentaje_cpu(int pid) {
     long clock_ticks = sysconf(_SC_CLK_TCK); // para obtener el número de ticks por segundo
     proc_t *proceso;
     proc_t p1 = {0}, p2 = {0}; // se usa sin ser punteros para evitar asiganar memoria y liberarla
@@ -187,7 +187,7 @@ void eliminar_procesos(Node **head) {
     printf("\n");
 }
 
-int suspender_procesos(Node **head) {
+void suspender_procesos(Node **head) {
     Node *nodeActual = *head;
     while (nodeActual != NULL) {
         if (kill(nodeActual->data->tid, SIGSTOP) == 0) {
@@ -198,10 +198,10 @@ int suspender_procesos(Node **head) {
         }
         nodeActual = nodeActual->next;
     }
-    return 1;
+    printf("\n");
 }
 
-int reanudar_procesos(Node **head) {
+void reanudar_procesos(Node **head) {
     Node *nodeActual = *head;
     while (nodeActual != NULL) {
         if (kill(nodeActual->data->tid, SIGCONT) == 0) {
@@ -210,5 +210,6 @@ int reanudar_procesos(Node **head) {
             printf("❌ Error al reanudar el proceso '%s'. \n", nodeActual->data->cmd);
         }
         nodeActual = nodeActual->next;
-    } 
+    }
+    printf("\n");
 }

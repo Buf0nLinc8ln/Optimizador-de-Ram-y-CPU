@@ -23,7 +23,8 @@ void imprimirLista(Node *head) {
     
     struct Node *nodeActual = head;
     while(nodeActual != NULL) {
-        printf("PID: %d | PPID: %d | GPID: %d | USER: (%d)%s | GROUP: (%d)%s | ESTADO: %c | TTY: %d | TPGID: %d | NAME: %s \n",
+        float porcentaje = calcular_porcentaje_cpu(nodeActual->data->tid);
+        printf("PID: %d | PPID: %d | GPID: %d | USER: (%d)%s | GROUP: (%d)%s | ESTADO: %c | VM_RSS: %lu | CPU: %.2f | NAME: %s \n",
                nodeActual->data->tid, 
                nodeActual->data->ppid, 
                nodeActual->data->pgrp, 
@@ -32,13 +33,11 @@ void imprimirLista(Node *head) {
                nodeActual->data->rgid, 
                nodeActual->data->rgroup, 
                nodeActual->data->state,
-               nodeActual->data->tty,
-               nodeActual->data->tpgid,
+               nodeActual->data->vm_rss,
+               porcentaje,
                nodeActual->data->cmd);
         nodeActual = nodeActual->next;
-
     }
-
 }
 
 
